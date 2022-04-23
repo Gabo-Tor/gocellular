@@ -18,10 +18,10 @@ import (
 
 const SIZE = 5
 
-//                     0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
+//                       0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
 var Survival = [27]uint8{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
-//                  0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
+//                    0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
 var Spawn = [27]uint8{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
 const States = 5
@@ -69,14 +69,34 @@ func make3D(n uint8) [][][]uint8 {
 	return x
 }
 
+func one_if_positive(value uint8) uint8 {
+	if value > 0 {
+		return 1
+	}
+	return 0
+}
+
+func count_neigbours(board [][][]uint8, x uint8, y uint8, z uint8) uint8 {
+	count := uint8(0)
+	count += one_if_positive(board[x][y][z])
+	//TODO: ADD all other 26?? cases
+	return count
+}
+
 func update(board [][][]uint8) {
 
 	//oldBoard := board
-
+	// TODO: make world circular
 	for i, c := range board {
-		for j, r := range c {
-			for k := range r {
-				board[i][j][k] = States //TODO: magic number
+		if i > 0 && i < SIZE { //TODO: this is ugly
+			for j, r := range c {
+				if j > 0 && j < SIZE {
+					for k := range r {
+						if i > 0 && i < SIZE {
+							board[i][j][k] = States //TODO: magic number
+						}
+					}
+				}
 			}
 		}
 	}
