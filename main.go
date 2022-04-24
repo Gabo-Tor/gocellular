@@ -221,18 +221,17 @@ func main() {
 	a.Subscribe(window.OnWindowSize, onResize)
 	onResize("", nil)
 
-	// Create a blue torus and add it to the scene
-	geom := geometry.NewBox(1, 1, 1)
-	mat := material.NewStandard(math32.NewColor("DarkBlue"))
-	mesh := graphic.NewMesh(geom, mat)
-	scene.Add(mesh)
+	//TODO: this does not work with less than 3 states??
+	display_board(board, scene)
+	update(board)
 
 	// Create and add a button to the scene
 	btn := gui.NewButton("Make Red")
 	btn.SetPosition(100, 40)
 	btn.SetSize(40, 40)
 	btn.Subscribe(gui.OnClick, func(name string, ev interface{}) {
-		mat.SetColor(math32.NewColor("DarkRed"))
+
+		display_board(board, scene)
 	})
 	scene.Add(btn)
 
@@ -254,4 +253,33 @@ func main() {
 		renderer.Render(scene, cam)
 	})
 
+}
+
+func display_board(board [][][]uint8, scene *core.Node) {
+	for i, c := range board {
+		for j, r := range c {
+			for k := range r {
+				switch board[i][j][k] {
+				case 0:
+
+				case 1:
+					scene.Add(create_box(float32(i), float32(j), float32(k)))
+				case states - 2:
+					scene.Add(create_box(float32(i), float32(j), float32(k)))
+				case states - 1:
+					scene.Add(create_box(float32(i), float32(j), float32(k)))
+				default:
+					scene.Add(create_box(float32(i), float32(j), float32(k)))
+				}
+			}
+		}
+	}
+}
+
+func create_box(x float32, y float32, z float32) *graphic.Mesh {
+	geom := geometry.NewBox(1, 1, 1)
+	mat := material.NewStandard(math32.NewColor("Blue"))
+	mesh := graphic.NewMesh(geom, mat)
+	mesh.SetPosition(x, y, z)
+	return mesh
 }
