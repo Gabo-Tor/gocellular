@@ -32,15 +32,15 @@ import (
 	"github.com/g3n/engine/window"
 )
 
-const SIZE = 9
+const SIZE = 7
 
 //                       0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
-var survival = [27]uint8{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+var survival = [27]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 
 //                    0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
-var spawn = [27]uint8{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+var spawn = [27]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0}
 
-const states = 5
+const states = 2
 const Neighbour = 1
 
 func populate(board [][][]uint8) {
@@ -48,7 +48,13 @@ func populate(board [][][]uint8) {
 	for i, c := range board {
 		for j, r := range c {
 			for k := range r {
-				board[i][j][k] = uint8(rand.Intn(states))
+				if rand.Float32() > 0.9 {
+					board[i][j][k] = 0
+				} else {
+					board[i][j][k] = uint8(rand.Intn(states))
+					// board[i][j][k] = 1 //TODO: delete debug
+				}
+
 			}
 		}
 	}
@@ -63,14 +69,16 @@ func printBoard(board [][][]uint8) {
 				switch board[i][j][k] { //TODO: this does not work with less than 3 states??
 				case 0:
 					fmt.Print(" ")
-				case 1:
+					// fmt.Print(board[i][j][k])
+				/*case 1:
 					fmt.Print("░")
 				case states - 2:
 					fmt.Print("▓")
 				case states - 1:
-					fmt.Print("█")
+					fmt.Print("█")*/
 				default:
 					fmt.Print("▒")
+					// fmt.Print(" ", board[i][j][k])
 				}
 			}
 			fmt.Print("|")
@@ -146,6 +154,7 @@ func count_neigbours(board [][][]uint8, x int, y int, z int) int {
 	} else {
 		fmt.Print("moore neighborhood not implemented yet!")
 	}
+	// fmt.Println(count) //TODO: debug
 	return count
 }
 
@@ -174,7 +183,7 @@ func update(board [][][]uint8) {
 								board[i][j][k]--
 								board[i][j][k] += survival[count_neigbours(oldBoard, i, j, k)]
 							} else {
-								board[i][j][k] = states * spawn[count_neigbours(oldBoard, i, j, k)]
+								board[i][j][k] = (states - 1) * spawn[count_neigbours(oldBoard, i, j, k)]
 							}
 
 						}
@@ -190,7 +199,7 @@ func main() {
 	board := make3D(SIZE)
 	populate(board)
 
-	for n := 1; n < 20; n++ { //magic number
+	for n := 1; n < 3; n++ { //magic number
 		printBoard(board)
 		update(board)
 	}
@@ -221,9 +230,7 @@ func main() {
 	a.Subscribe(window.OnWindowSize, onResize)
 	onResize("", nil)
 
-	//TODO: this does not work with less than 3 states??
-	display_board(board, scene)
-	update(board)
+	graphical_board := create_board(scene)
 
 	// Create and add a button to the scene
 	btn := gui.NewButton("Make Red")
@@ -231,7 +238,9 @@ func main() {
 	btn.SetSize(40, 40)
 	btn.Subscribe(gui.OnClick, func(name string, ev interface{}) {
 
-		display_board(board, scene)
+		display_board(graphical_board, board)
+		update(board)
+
 	})
 	scene.Add(btn)
 
@@ -251,35 +260,69 @@ func main() {
 	a.Run(func(renderer *renderer.Renderer, deltaTime time.Duration) {
 		a.Gls().Clear(gls.DEPTH_BUFFER_BIT | gls.STENCIL_BUFFER_BIT | gls.COLOR_BUFFER_BIT)
 		renderer.Render(scene, cam)
+
 	})
 
 }
 
-func display_board(board [][][]uint8, scene *core.Node) {
+func display_board(gBoard [][][]*graphic.Mesh, board [][][]uint8) {
 	for i, c := range board {
 		for j, r := range c {
 			for k := range r {
 				switch board[i][j][k] {
 				case 0:
 
-				case 1:
-					scene.Add(create_box(float32(i), float32(j), float32(k)))
+					gBoard[i][j][k].SetScale(0.001, 0.001, 0.001)
+				/*case 1:
+
+					gBoard[i][j][k].SetScale(0.5, 0.5, 0.5)
+				case states - 3:
+
+					gBoard[i][j][k].SetScale(0.8, 0.8, 0.8)
 				case states - 2:
-					scene.Add(create_box(float32(i), float32(j), float32(k)))
+
+					gBoard[i][j][k].SetScale(0.9, 0.9, 0.9)
 				case states - 1:
-					scene.Add(create_box(float32(i), float32(j), float32(k)))
+					//gBoard[i][j][k].SetMaterial(material.NewStandard(math32.NewColor("DarkBlue")))
+					gBoard[i][j][k].SetScale(1, 1, 1)*/
 				default:
-					scene.Add(create_box(float32(i), float32(j), float32(k)))
+
+					gBoard[i][j][k].SetScale(0.99, 0.99, 0.99)
 				}
 			}
 		}
 	}
 }
 
+func create_board(scene *core.Node) [][][]*graphic.Mesh {
+	n := SIZE
+	buf := make([]*graphic.Mesh, n*n*n) // uint8eger exponentiantion in go uint8(math.Pow(float64(n), float64(m))?????? :(
+	x := make([][][]*graphic.Mesh, n)
+	for i := range x {
+		x[i] = make([][]*graphic.Mesh, n)
+		for j := range x[i] {
+			x[i][j] = buf[:n:n]
+			buf = buf[n:]
+			for k := 0; k < SIZE; k++ {
+				x[i][j][k] = create_box(float32(i), float32(j), float32(k))
+				c := math32.NewColor("white")
+				c.B = float32(i) / float32(SIZE)
+				c.G = float32(j) / float32(SIZE)
+				c.R = float32(k) / float32(SIZE)
+				x[i][j][k].SetMaterial(material.NewStandard(c))
+				scene.Add(x[i][j][k])
+			}
+		}
+	}
+	return x
+
+}
+
 func create_box(x float32, y float32, z float32) *graphic.Mesh {
-	geom := geometry.NewBox(1, 1, 1)
+	geom := geometry.NewBox(1.0/SIZE, 1.0/SIZE, 1.0/SIZE)
 	mat := material.NewStandard(math32.NewColor("Blue"))
 	mesh := graphic.NewMesh(geom, mat)
-	mesh.SetPosition(x, y, z)
+	mesh.SetPosition(x/SIZE-0.5, y/SIZE-0.5, z/SIZE-0.5)
+	//mesh.SetMaterial(material.NewStandard(math32.NewColor("Green")))
 	return mesh
 }
