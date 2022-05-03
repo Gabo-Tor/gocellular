@@ -32,15 +32,19 @@ import (
 	"github.com/g3n/engine/window"
 )
 
-const SIZE = 7
+const SIZE = 30
 
 //                       0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
-var survival = [27]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0}
+var survival = [27]uint8{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+// var survival = [27]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 
 //                    0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
-var spawn = [27]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0}
+var spawn = [27]uint8{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
-const states = 2
+// var spawn = [27]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0}
+
+const states = 5
 const Neighbour = 1
 
 func populate(board [][][]uint8) {
@@ -48,13 +52,12 @@ func populate(board [][][]uint8) {
 	for i, c := range board {
 		for j, r := range c {
 			for k := range r {
-				if rand.Float32() > 0.9 {
+				if rand.Float32() > 0.02 {
 					board[i][j][k] = 0
 				} else {
 					board[i][j][k] = uint8(rand.Intn(states))
 					// board[i][j][k] = 1 //TODO: delete debug
 				}
-				board[i][j][k] = 1
 
 			}
 		}
@@ -153,7 +156,7 @@ func count_neigbours(board [][][]uint8, x int, y int, z int) int {
 		count += one_if_positive(board[x][y+1][z+1])
 
 	} else {
-		fmt.Print("moore neighborhood not implemented yet!")
+		fmt.Print("von newman neighborhood not implemented yet!")
 	}
 	//fmt.Println(x, y, z, count) //TODO: debug
 	return count
@@ -161,6 +164,7 @@ func count_neigbours(board [][][]uint8, x int, y int, z int) int {
 
 func update(board [][][]uint8) {
 
+	// Faces
 	for i := 1; i < SIZE-1; i++ {
 		for j := 1; j < SIZE-1; j++ {
 			board[0][i][j] = board[SIZE-2][i][j]
@@ -172,19 +176,34 @@ func update(board [][][]uint8) {
 		}
 	}
 
-	/* TODO: make this work for all 12 corners
+	// Corners
 	for i := 1; i < SIZE-1; i++ {
 		board[0][i][0] = board[SIZE-2][i][SIZE-2]
 		board[i][0][0] = board[i][SIZE-2][SIZE-2]
 		board[0][0][i] = board[SIZE-2][SIZE-2][i]
-		board[SIZE-1][i][j] = board[1][i][j]
-		board[i][j][SIZE-1] = board[i][j][1]
-		board[j][SIZE-1][i] = board[j][1][i]
 
-	}*/
-	/*
-	   TODO: add here somethin to take acount vertices
-	*/
+		board[SIZE-1][i][SIZE-1] = board[1][i][1]
+		board[i][SIZE-1][SIZE-1] = board[i][1][1]
+		board[SIZE-1][SIZE-1][i] = board[1][1][i]
+
+		board[SIZE-1][i][0] = board[1][i][SIZE-2]
+		board[i][0][SIZE-1] = board[i][SIZE-2][1]
+		board[0][SIZE-1][i] = board[SIZE-2][1][i]
+
+		board[0][i][SIZE-1] = board[SIZE-2][i][1]
+		board[i][SIZE-1][0] = board[i][1][SIZE-2]
+		board[SIZE-1][0][i] = board[1][SIZE-2][i]
+
+	}
+	// Vertices
+	board[0][0][0] = board[SIZE-2][SIZE-2][SIZE-2]
+	board[SIZE-1][0][0] = board[1][SIZE-2][SIZE-2]
+	board[0][SIZE-1][0] = board[SIZE-2][1][SIZE-2]
+	board[SIZE-1][SIZE-1][0] = board[1][1][SIZE-2]
+	board[0][0][SIZE-1] = board[SIZE-2][SIZE-2][1]
+	board[SIZE-1][0][SIZE-1] = board[1][SIZE-2][1]
+	board[0][SIZE-1][SIZE-1] = board[SIZE-2][1][1]
+	board[SIZE-1][SIZE-1][SIZE-1] = board[1][1][1]
 
 	oldBoard := make([][][]uint8, len(board))
 	for i, c := range board {
@@ -201,10 +220,13 @@ func update(board [][][]uint8) {
 				if j > 0 && j < SIZE-1 {
 					for k := range r {
 						if k > 0 && k < SIZE-1 {
-							if board[i][j][k] > 0 { //cell is alive
+							if board[i][j][k] == 1 { //cell is alive on the last state
+								board[i][j][k] = survival[count_neigbours(oldBoard, i, j, k)]
+
+							} else if board[i][j][k] > 1 { //cell is alive
 								board[i][j][k]--
-								board[i][j][k] += survival[count_neigbours(oldBoard, i, j, k)]
-							} else {
+
+							} else { //cell is dead
 								board[i][j][k] = (states - 1) * spawn[count_neigbours(oldBoard, i, j, k)]
 							}
 
@@ -221,10 +243,10 @@ func main() {
 	board := make3D(SIZE)
 	populate(board)
 
-	for n := 0; n < 2; n++ { //magic number
-		printBoard(board)
-		update(board)
-	}
+	// for n := 0; n < 8; n++ { //magic number
+	// 	printBoard(board)
+	// 	update(board)
+	// }
 
 	// Create application and scene
 	a := app.App()
@@ -282,7 +304,9 @@ func main() {
 	a.Run(func(renderer *renderer.Renderer, deltaTime time.Duration) {
 		a.Gls().Clear(gls.DEPTH_BUFFER_BIT | gls.STENCIL_BUFFER_BIT | gls.COLOR_BUFFER_BIT)
 		renderer.Render(scene, cam)
-
+		display_board(graphical_board, board)
+		update(board)
+		time.Sleep(100 * time.Millisecond)
 	})
 
 }
@@ -295,7 +319,7 @@ func display_board(gBoard [][][]*graphic.Mesh, board [][][]uint8) {
 				case 0:
 
 					gBoard[i][j][k].SetScale(0.001, 0.001, 0.001)
-				/*case 1:
+				case 1:
 
 					gBoard[i][j][k].SetScale(0.5, 0.5, 0.5)
 				case states - 3:
@@ -306,7 +330,7 @@ func display_board(gBoard [][][]*graphic.Mesh, board [][][]uint8) {
 					gBoard[i][j][k].SetScale(0.9, 0.9, 0.9)
 				case states - 1:
 					//gBoard[i][j][k].SetMaterial(material.NewStandard(math32.NewColor("DarkBlue")))
-					gBoard[i][j][k].SetScale(1, 1, 1)*/
+					gBoard[i][j][k].SetScale(1, 1, 1)
 				default:
 
 					gBoard[i][j][k].SetScale(0.99, 0.99, 0.99)
