@@ -35,7 +35,7 @@ import (
 const SIZE = 7
 
 //                       0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
-var survival = [27]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+var survival = [27]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0}
 
 //                    0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
 var spawn = [27]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0}
@@ -54,6 +54,7 @@ func populate(board [][][]uint8) {
 					board[i][j][k] = uint8(rand.Intn(states))
 					// board[i][j][k] = 1 //TODO: delete debug
 				}
+				board[i][j][k] = 1
 
 			}
 		}
@@ -154,14 +155,14 @@ func count_neigbours(board [][][]uint8, x int, y int, z int) int {
 	} else {
 		fmt.Print("moore neighborhood not implemented yet!")
 	}
-	// fmt.Println(count) //TODO: debug
+	//fmt.Println(x, y, z, count) //TODO: debug
 	return count
 }
 
 func update(board [][][]uint8) {
 
-	for i := 0; i < SIZE; i++ {
-		for j := 0; j < SIZE; j++ {
+	for i := 1; i < SIZE-1; i++ {
+		for j := 1; j < SIZE-1; j++ {
 			board[0][i][j] = board[SIZE-2][i][j]
 			board[i][j][0] = board[i][j][SIZE-2]
 			board[j][0][i] = board[j][SIZE-2][i]
@@ -171,7 +172,28 @@ func update(board [][][]uint8) {
 		}
 	}
 
-	oldBoard := board
+	/* TODO: make this work for all 12 corners
+	for i := 1; i < SIZE-1; i++ {
+		board[0][i][0] = board[SIZE-2][i][SIZE-2]
+		board[i][0][0] = board[i][SIZE-2][SIZE-2]
+		board[0][0][i] = board[SIZE-2][SIZE-2][i]
+		board[SIZE-1][i][j] = board[1][i][j]
+		board[i][j][SIZE-1] = board[i][j][1]
+		board[j][SIZE-1][i] = board[j][1][i]
+
+	}*/
+	/*
+	   TODO: add here somethin to take acount vertices
+	*/
+
+	oldBoard := make([][][]uint8, len(board))
+	for i, c := range board {
+		oldBoard[i] = make([][]uint8, len(board[i]))
+		for j := range c {
+			oldBoard[i][j] = make([]uint8, len(board[i][j]))
+			copy(oldBoard[i][j], board[i][j])
+		}
+	}
 
 	for i, c := range board {
 		if i > 0 && i < SIZE-1 { //TODO: this is ugly
@@ -199,7 +221,7 @@ func main() {
 	board := make3D(SIZE)
 	populate(board)
 
-	for n := 1; n < 3; n++ { //magic number
+	for n := 0; n < 2; n++ { //magic number
 		printBoard(board)
 		update(board)
 	}
