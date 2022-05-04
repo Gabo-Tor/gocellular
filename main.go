@@ -33,18 +33,18 @@ import (
 
 const SIZE = 30                        // >50 is too much for the 3d engine
 const FRECUENCY = 5                    //hz
-const INITIAL_ALIVE_PROBABILITY = 0.02 //0-1
+const INITIAL_ALIVE_PROBABILITY = 0.02 //0 - 1
 
+// 3D automata rules:
 //                       0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
-// var survival = [27]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 var survival = [27]uint8{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
 //                    0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
-// var spawn = [27]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0}
 var spawn = [27]uint8{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
 const states = 5
-const Neighbour = 1 //1=M 0=VN
+
+const Neighbour = 1 //1=Moore 0=Von Newmann
 
 func populate(board [][][]uint8) {
 	// Initialice board randomly with INITIAL_ALIVE_PROBABILITY
