@@ -13,6 +13,8 @@ ex: 4 / 4 / 5 / M
 import (
 	"fmt"
 	"math/rand"
+	"os"
+	"runtime/pprof"
 	"strings"
 	"time"
 
@@ -46,7 +48,7 @@ const states = 5
 
 const Neighbour = 1 //1=Moore 0=Von Newmann
 
-func populate(board [][][]uint8) {
+func populate(board [SIZE][SIZE][SIZE]uint8) {
 	// Initialice board randomly with INITIAL_ALIVE_PROBABILITY
 	for i, c := range board {
 		for j, r := range c {
@@ -61,7 +63,7 @@ func populate(board [][][]uint8) {
 	}
 }
 
-func printBoard(board [][][]uint8) {
+func printBoard(board [SIZE][SIZE][SIZE]uint8) {
 	// Print board to the std output... for debbuging, replaced by game engine
 	fmt.Println(strings.Repeat("-", (SIZE+1)*SIZE))
 	for i, c := range board {
@@ -89,20 +91,6 @@ func printBoard(board [][][]uint8) {
 
 }
 
-func create3dSlice(n int) [][][]uint8 {
-	// creates a dyanmical square 3d slice
-	buf := make([]uint8, n*n*n) // uint8eger exponentiantion in go uint8(math.Pow(float64(n), float64(m))?????? :(
-	x := make([][][]uint8, n)
-	for i := range x {
-		x[i] = make([][]uint8, n)
-		for j := range x[i] {
-			x[i][j] = buf[:n:n]
-			buf = buf[n:]
-		}
-	}
-	return x
-}
-
 func one_if_positive(value uint8) int { // Does the compile make this inline? (yes) can I ask for this explicitly? (??)
 	if value > 0 {
 		return 1
@@ -110,7 +98,7 @@ func one_if_positive(value uint8) int { // Does the compile make this inline? (y
 	return 0
 }
 
-func count_neigbours(board [][][]uint8, x int, y int, z int) int {
+func count_neigbours(board [SIZE][SIZE][SIZE]uint8, x int, y int, z int) int {
 	//counts neigbous with either Moore o Von Neumann vecinty
 	//This function is slooow, slices are slowww :(
 	count := 0
@@ -122,7 +110,7 @@ func count_neigbours(board [][][]uint8, x int, y int, z int) int {
 	return count
 }
 
-func countNeighborsMoore(count int, board [][][]uint8, x int, y int, z int) int {
+func countNeighborsMoore(count int, board [SIZE][SIZE][SIZE]uint8, x int, y int, z int) int {
 	count += one_if_positive(board[x-1][y][z])
 	count += one_if_positive(board[x-1][y-1][z])
 	count += one_if_positive(board[x-1][y+1][z])
@@ -161,7 +149,7 @@ func countNeighborsMoore(count int, board [][][]uint8, x int, y int, z int) int 
 	return count
 }
 
-func countNeighborsVonNeumann(count int, board [][][]uint8, x int, y int, z int) int {
+func countNeighborsVonNeumann(count int, board [SIZE][SIZE][SIZE]uint8, x int, y int, z int) int {
 	count += one_if_positive(board[x-1][y][z])
 	count += one_if_positive(board[x+1][y][z])
 
@@ -174,7 +162,7 @@ func countNeighborsVonNeumann(count int, board [][][]uint8, x int, y int, z int)
 	return count
 }
 
-func update(board [][][]uint8) {
+func update(board [SIZE][SIZE][SIZE]uint8) {
 
 	// Makes the map circular(tiled): Faces
 	for i := 1; i < SIZE-1; i++ {
@@ -215,12 +203,10 @@ func update(board [][][]uint8) {
 	board[0][SIZE-1][SIZE-1] = board[SIZE-2][1][1]
 	board[SIZE-1][SIZE-1][SIZE-1] = board[1][1][1]
 
-	oldBoard := make([][][]uint8, len(board)) // Is this memory safe???
+	var oldBoard [SIZE][SIZE][SIZE]uint8 // Is this memory safe???
 	for i, c := range board {
-		oldBoard[i] = make([][]uint8, len(board[i]))
 		for j := range c {
-			oldBoard[i][j] = make([]uint8, len(board[i][j]))
-			copy(oldBoard[i][j], board[i][j])
+			oldBoard[i][j] = board[i][j] // TODO: does this do what i want it to do? (copy by value everithing)
 		}
 	}
 
@@ -242,7 +228,7 @@ func update(board [][][]uint8) {
 }
 
 // Fuctions for 3D
-func display_board(gBoard [][][]*graphic.Mesh, board [][][]uint8) {
+func display_board(gBoard [SIZE][SIZE][SIZE]*graphic.Mesh, board [SIZE][SIZE][SIZE]uint8) {
 	// Makes cells bigger or smaller depending on their state, dead cells have scale 0
 	for i, c := range board {
 		for j, r := range c {
@@ -255,16 +241,11 @@ func display_board(gBoard [][][]*graphic.Mesh, board [][][]uint8) {
 	}
 }
 
-func create_board(scene *core.Node) [][][]*graphic.Mesh {
+func create_board(scene *core.Node) [SIZE][SIZE][SIZE]*graphic.Mesh {
 	//Creates graphical objestes and stores them on a 3D slice
-	n := SIZE
-	buf := make([]*graphic.Mesh, n*n*n) // uint8eger exponentiantion in go: uint8(math.Pow(float64(n), float64(m)) isn there a cleaner way?????? :(
-	x := make([][][]*graphic.Mesh, n)
+	var x [SIZE][SIZE][SIZE]*graphic.Mesh
 	for i := range x {
-		x[i] = make([][]*graphic.Mesh, n)
 		for j := range x[i] {
-			x[i][j] = buf[:n:n]
-			buf = buf[n:]
 			for k := 0; k < SIZE; k++ {
 				x[i][j][k] = create_box(float32(i), float32(j), float32(k))
 				c := math32.NewColor("white")
@@ -289,13 +270,18 @@ func create_box(x float32, y float32, z float32) *graphic.Mesh {
 
 func main() {
 
-	// //--For profiling code--
-	// file, _ := os.Create("./cpu.pprof")
-	// pprof.StartCPUProfile(file)
-	// defer pprof.StopCPUProfile()
+	//--For profiling code--
+	file, _ := os.Create("./cpu.pprof")
+	pprof.StartCPUProfile(file)
+	defer pprof.StopCPUProfile()
 
-	board := create3dSlice(SIZE)
+	var board [SIZE][SIZE][SIZE]uint8
 	populate(board)
+
+	// for n := 0; n < 9; n++ { //magic number
+	// 	//printBoard(board)
+	// 	update(board)
+	// }
 
 	ticker := time.NewTicker((1000 / FRECUENCY) * time.Millisecond)
 	done := make(chan bool) //TODO: delete this
