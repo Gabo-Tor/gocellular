@@ -13,8 +13,6 @@ ex: 4 / 4 / 5 / M
 import (
 	"fmt"
 	"math/rand"
-	"os"
-	"runtime/pprof"
 	"strings"
 	"time"
 
@@ -48,7 +46,7 @@ const states = 5
 
 const Neighbour = 1 //1=Moore 0=Von Newmann
 
-func populate(board [SIZE][SIZE][SIZE]uint8) {
+func populate(board *[SIZE][SIZE][SIZE]uint8) {
 	// Initialice board randomly with INITIAL_ALIVE_PROBABILITY
 	for i, c := range board {
 		for j, r := range c {
@@ -63,7 +61,7 @@ func populate(board [SIZE][SIZE][SIZE]uint8) {
 	}
 }
 
-func printBoard(board [SIZE][SIZE][SIZE]uint8) {
+func printBoard(board *[SIZE][SIZE][SIZE]uint8) {
 	// Print board to the std output... for debbuging, replaced by game engine
 	fmt.Println(strings.Repeat("-", (SIZE+1)*SIZE))
 	for i, c := range board {
@@ -98,7 +96,7 @@ func one_if_positive(value uint8) int { // Does the compile make this inline? (y
 	return 0
 }
 
-func count_neigbours(board [SIZE][SIZE][SIZE]uint8, x int, y int, z int) int {
+func count_neigbours(board *[SIZE][SIZE][SIZE]uint8, x int, y int, z int) int {
 	//counts neigbous with either Moore o Von Neumann vecinty
 	//This function is slooow, slices are slowww :(
 	count := 0
@@ -110,7 +108,7 @@ func count_neigbours(board [SIZE][SIZE][SIZE]uint8, x int, y int, z int) int {
 	return count
 }
 
-func countNeighborsMoore(count int, board [SIZE][SIZE][SIZE]uint8, x int, y int, z int) int {
+func countNeighborsMoore(count int, board *[SIZE][SIZE][SIZE]uint8, x int, y int, z int) int {
 	count += one_if_positive(board[x-1][y][z])
 	count += one_if_positive(board[x-1][y-1][z])
 	count += one_if_positive(board[x-1][y+1][z])
@@ -149,7 +147,7 @@ func countNeighborsMoore(count int, board [SIZE][SIZE][SIZE]uint8, x int, y int,
 	return count
 }
 
-func countNeighborsVonNeumann(count int, board [SIZE][SIZE][SIZE]uint8, x int, y int, z int) int {
+func countNeighborsVonNeumann(count int, board *[SIZE][SIZE][SIZE]uint8, x int, y int, z int) int {
 	count += one_if_positive(board[x-1][y][z])
 	count += one_if_positive(board[x+1][y][z])
 
@@ -162,7 +160,7 @@ func countNeighborsVonNeumann(count int, board [SIZE][SIZE][SIZE]uint8, x int, y
 	return count
 }
 
-func update(board [SIZE][SIZE][SIZE]uint8) {
+func update(board *[SIZE][SIZE][SIZE]uint8) {
 
 	// Makes the map circular(tiled): Faces
 	for i := 1; i < SIZE-1; i++ {
@@ -214,13 +212,13 @@ func update(board [SIZE][SIZE][SIZE]uint8) {
 		for j := 1; j < SIZE-1; j++ {
 			for k := 1; k < SIZE-1; k++ {
 				if board[i][j][k] == 1 { //cell is alive but on its last state
-					board[i][j][k] = survival[count_neigbours(oldBoard, i, j, k)]
+					board[i][j][k] = survival[count_neigbours(&oldBoard, i, j, k)]
 
 				} else if board[i][j][k] > 1 { //cell is alive
 					board[i][j][k]--
 
 				} else { //cell is dead
-					board[i][j][k] = (states - 1) * spawn[count_neigbours(oldBoard, i, j, k)]
+					board[i][j][k] = (states - 1) * spawn[count_neigbours(&oldBoard, i, j, k)]
 				}
 			}
 		}
@@ -270,17 +268,17 @@ func create_box(x float32, y float32, z float32) *graphic.Mesh {
 
 func main() {
 
-	//--For profiling code--
-	file, _ := os.Create("./cpu.pprof")
-	pprof.StartCPUProfile(file)
-	defer pprof.StopCPUProfile()
+	// //--For profiling code--
+	// file, _ := os.Create("./cpu.pprof")
+	// pprof.StartCPUProfile(file)
+	// defer pprof.StopCPUProfile()
 
 	var board [SIZE][SIZE][SIZE]uint8
-	populate(board)
+	populate(&board)
 
 	// for n := 0; n < 9; n++ { //magic number
-	// 	//printBoard(board)
-	// 	update(board)
+	// 	// printBoard(board)
+	// 	update(&board)
 	// }
 
 	ticker := time.NewTicker((1000 / FRECUENCY) * time.Millisecond)
@@ -292,7 +290,7 @@ func main() {
 			case <-done:
 				return
 			case t := <-ticker.C:
-				update(board)
+				update(&board)
 				_ = t //TODO: delete t, we are probably never using done either
 			}
 		}
@@ -332,7 +330,7 @@ func main() {
 	btn.SetSize(40, 40)
 	btn.Subscribe(gui.OnClick, func(name string, ev interface{}) {
 
-		populate(board)
+		populate(&board)
 
 	})
 	scene.Add(btn)
