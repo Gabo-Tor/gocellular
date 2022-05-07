@@ -31,9 +31,9 @@ import (
 	"github.com/g3n/engine/window"
 )
 
-const SIZE = 30                        // >50 is too much for the 3d engine
-const FRECUENCY = 5                    // hz
-const INITIAL_ALIVE_PROBABILITY = 0.02 // 0 - 1
+const SIZE = 40                        // >50 is too much for the 3d engine
+const FRECUENCY = 4                    // hz
+const INITIAL_ALIVE_PROBABILITY = 0.01 // 0 - 1
 
 // 3D automata rules:
 //                       0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
@@ -46,7 +46,7 @@ const states = 5
 
 const Neighbour = 1 //1=Moore 0=Von Newmann
 
-func populate(board [][][]uint8) {
+func populate(board *[SIZE][SIZE][SIZE]uint8) {
 	// Initialice board randomly with INITIAL_ALIVE_PROBABILITY
 	for i, c := range board {
 		for j, r := range c {
@@ -61,24 +61,16 @@ func populate(board [][][]uint8) {
 	}
 }
 
-func printBoard(board [][][]uint8) {
+func printBoard(board *[SIZE][SIZE][SIZE]uint8) {
 	// Print board to the std output... for debbuging, replaced by game engine
 	fmt.Println(strings.Repeat("-", (SIZE+1)*SIZE))
 	for i, c := range board {
 		for j, r := range c {
 			for k := range r {
-				switch board[i][j][k] { //TODO:does this work with less than 3 states?? (nope, commented out)
-				case 0:
+				if board[i][j][k] == 0 {
 					fmt.Print(" ")
-					// fmt.Print(board[i][j][k])
-				/*case 1:
-					fmt.Print("░")
-				case states - 2:
-					fmt.Print("▓")
-				case states - 1:
-					fmt.Print("█")*/
-				default:
-					fmt.Print("▒")
+				} else {
+					fmt.Print("█")
 				}
 			}
 			fmt.Print("|")
@@ -89,20 +81,6 @@ func printBoard(board [][][]uint8) {
 
 }
 
-func create3dSlice(n int) [][][]uint8 {
-	// creates a dyanmical square 3d slice
-	buf := make([]uint8, n*n*n) // uint8eger exponentiantion in go uint8(math.Pow(float64(n), float64(m))?????? :(
-	x := make([][][]uint8, n)
-	for i := range x {
-		x[i] = make([][]uint8, n)
-		for j := range x[i] {
-			x[i][j] = buf[:n:n]
-			buf = buf[n:]
-		}
-	}
-	return x
-}
-
 func one_if_positive(value uint8) int { // Does the compile make this inline? (yes) can I ask for this explicitly? (??)
 	if value > 0 {
 		return 1
@@ -110,7 +88,7 @@ func one_if_positive(value uint8) int { // Does the compile make this inline? (y
 	return 0
 }
 
-func count_neigbours(board [][][]uint8, x int, y int, z int) int {
+func count_neigbours(board *[SIZE][SIZE][SIZE]uint8, x int, y int, z int) int {
 	//counts neigbous with either Moore o Von Neumann vecinty
 	//This function is slooow, slices are slowww :(
 	count := 0
@@ -122,7 +100,7 @@ func count_neigbours(board [][][]uint8, x int, y int, z int) int {
 	return count
 }
 
-func countNeighborsMoore(count int, board [][][]uint8, x int, y int, z int) int {
+func countNeighborsMoore(count int, board *[SIZE][SIZE][SIZE]uint8, x int, y int, z int) int {
 	count += one_if_positive(board[x-1][y][z])
 	count += one_if_positive(board[x-1][y-1][z])
 	count += one_if_positive(board[x-1][y+1][z])
@@ -161,7 +139,7 @@ func countNeighborsMoore(count int, board [][][]uint8, x int, y int, z int) int 
 	return count
 }
 
-func countNeighborsVonNeumann(count int, board [][][]uint8, x int, y int, z int) int {
+func countNeighborsVonNeumann(count int, board *[SIZE][SIZE][SIZE]uint8, x int, y int, z int) int {
 	count += one_if_positive(board[x-1][y][z])
 	count += one_if_positive(board[x+1][y][z])
 
@@ -174,7 +152,7 @@ func countNeighborsVonNeumann(count int, board [][][]uint8, x int, y int, z int)
 	return count
 }
 
-func update(board [][][]uint8) {
+func update(board *[SIZE][SIZE][SIZE]uint8) {
 
 	// Makes the map circular(tiled): Faces
 	for i := 1; i < SIZE-1; i++ {
@@ -215,12 +193,10 @@ func update(board [][][]uint8) {
 	board[0][SIZE-1][SIZE-1] = board[SIZE-2][1][1]
 	board[SIZE-1][SIZE-1][SIZE-1] = board[1][1][1]
 
-	oldBoard := make([][][]uint8, len(board)) // Is this memory safe???
+	var oldBoard [SIZE][SIZE][SIZE]uint8 // Is this memory safe???
 	for i, c := range board {
-		oldBoard[i] = make([][]uint8, len(board[i]))
 		for j := range c {
-			oldBoard[i][j] = make([]uint8, len(board[i][j]))
-			copy(oldBoard[i][j], board[i][j])
+			oldBoard[i][j] = board[i][j]
 		}
 	}
 
@@ -228,13 +204,13 @@ func update(board [][][]uint8) {
 		for j := 1; j < SIZE-1; j++ {
 			for k := 1; k < SIZE-1; k++ {
 				if board[i][j][k] == 1 { //cell is alive but on its last state
-					board[i][j][k] = survival[count_neigbours(oldBoard, i, j, k)]
+					board[i][j][k] = survival[count_neigbours(&oldBoard, i, j, k)]
 
 				} else if board[i][j][k] > 1 { //cell is alive
 					board[i][j][k]--
 
 				} else { //cell is dead
-					board[i][j][k] = (states - 1) * spawn[count_neigbours(oldBoard, i, j, k)]
+					board[i][j][k] = (states - 1) * spawn[count_neigbours(&oldBoard, i, j, k)]
 				}
 			}
 		}
@@ -242,36 +218,35 @@ func update(board [][][]uint8) {
 }
 
 // Fuctions for 3D
-func display_board(gBoard [][][]*graphic.Mesh, board [][][]uint8) {
+func display_board(gBoard [SIZE][SIZE][SIZE]*graphic.Mesh, board [SIZE][SIZE][SIZE]uint8) {
 	// Makes cells bigger or smaller depending on their state, dead cells have scale 0
 	for i, c := range board {
 		for j, r := range c {
 			for k := range r {
-				scale := float32(board[i][j][k]) / float32(states-1)
-				gBoard[i][j][k].SetScale(scale, scale, scale)
-
+				if board[i][j][k] == 0 {
+					gBoard[i][j][k].SetVisible(false)
+				} else {
+					scale := float32(board[i][j][k]) / float32(states-1)
+					gBoard[i][j][k].SetScale(scale, scale, scale)
+					gBoard[i][j][k].SetVisible(true)
+				}
 			}
 		}
 	}
 }
 
-func create_board(scene *core.Node) [][][]*graphic.Mesh {
-	//Creates graphical objestes and stores them on a 3D slice
-	n := SIZE
-	buf := make([]*graphic.Mesh, n*n*n) // uint8eger exponentiantion in go: uint8(math.Pow(float64(n), float64(m)) isn there a cleaner way?????? :(
-	x := make([][][]*graphic.Mesh, n)
+func create_board(scene *core.Node) [SIZE][SIZE][SIZE]*graphic.Mesh {
+	// Creates graphical objestes and stores them on a 3D slice
+	var x [SIZE][SIZE][SIZE]*graphic.Mesh
 	for i := range x {
-		x[i] = make([][]*graphic.Mesh, n)
 		for j := range x[i] {
-			x[i][j] = buf[:n:n]
-			buf = buf[n:]
 			for k := 0; k < SIZE; k++ {
-				x[i][j][k] = create_box(float32(i), float32(j), float32(k))
-				c := math32.NewColor("white")
-				c.B = float32(i) / float32(SIZE) // Nice color gradient
-				c.G = float32(j) / float32(SIZE)
-				c.R = float32(k) / float32(SIZE)
-				x[i][j][k].SetMaterial(material.NewStandard(c)) //
+				color := math32.NewColor("white")
+				color.B = float32(i) / float32(SIZE) // Nice color gradient
+				color.G = float32(j) / float32(SIZE)
+				color.R = float32(k) / float32(SIZE)
+				x[i][j][k] = create_cell(float32(i), float32(j), float32(k), color)
+				x[i][j][k].SetVisible(false)
 				scene.Add(x[i][j][k])
 			}
 		}
@@ -279,9 +254,10 @@ func create_board(scene *core.Node) [][][]*graphic.Mesh {
 	return x
 }
 
-func create_box(x float32, y float32, z float32) *graphic.Mesh {
+func create_cell(x float32, y float32, z float32, color *math32.Color) *graphic.Mesh {
+	// Creates one box of desires color in position xyz
 	geom := geometry.NewBox(1.0/SIZE, 1.0/SIZE, 1.0/SIZE)
-	mat := material.NewStandard(math32.NewColor("Blue")) // Its probably a good idea to create the box with the final color
+	mat := material.NewStandard(color)
 	mesh := graphic.NewMesh(geom, mat)
 	mesh.SetPosition(x/SIZE-0.5, y/SIZE-0.5, z/SIZE-0.5)
 	return mesh
@@ -294,23 +270,13 @@ func main() {
 	// pprof.StartCPUProfile(file)
 	// defer pprof.StopCPUProfile()
 
-	board := create3dSlice(SIZE)
-	populate(board)
+	var board [SIZE][SIZE][SIZE]uint8
+	populate(&board)
 
-	ticker := time.NewTicker((1000 / FRECUENCY) * time.Millisecond)
-	done := make(chan bool) //TODO: delete this
-
-	go func() { //TODO: make this more compact
-		for {
-			select {
-			case <-done:
-				return
-			case t := <-ticker.C:
-				update(board)
-				_ = t //TODO: delete t, we are probably never using done either
-			}
-		}
-	}()
+	// for n := 0; n < 9; n++ { //magic number
+	// 	// printBoard(board)
+	// 	update(&board)
+	// }
 
 	// Create application and scene
 	a := app.App()
@@ -346,22 +312,30 @@ func main() {
 	btn.SetSize(40, 40)
 	btn.Subscribe(gui.OnClick, func(name string, ev interface{}) {
 
-		populate(board)
+		populate(&board)
 
 	})
 	scene.Add(btn)
 
 	// Create and add lights to the scene
-	scene.Add(light.NewAmbient(&math32.Color{1.0, 1.0, 1.0}, 0.8))
-	pointLight := light.NewPoint(&math32.Color{1, 1, 1}, 5.0)
+	scene.Add(light.NewAmbient(&math32.Color{R: 1, G: 1, B: 1}, 0.8))
+	pointLight := light.NewPoint(&math32.Color{R: 1, G: 1, B: 1}, 5.0)
 	pointLight.SetPosition(1, 0, 2)
 	scene.Add(pointLight)
 
 	// Create and add an axis helper to the scene
-	scene.Add(helper.NewAxes(0.5))
+	scene.Add(helper.NewAxes(0.2))
 
 	// Set background color to gray
 	a.Gls().ClearColor(0.4, 0.4, 0.4, 1.0)
+
+	// Asynchronous map updating
+	ticker := time.NewTicker((1000 / FRECUENCY) * time.Millisecond)
+	go func() {
+		for range ticker.C {
+			update(&board)
+		}
+	}()
 
 	// Run the application
 	a.Run(func(renderer *renderer.Renderer, deltaTime time.Duration) {
