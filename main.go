@@ -31,9 +31,9 @@ import (
 	"github.com/g3n/engine/window"
 )
 
-const SIZE = 30                        // >50 is too much for the 3d engine
-const FRECUENCY = 5                    // hz
-const INITIAL_ALIVE_PROBABILITY = 0.02 // 0 - 1
+const SIZE = 40                        // >50 is too much for the 3d engine
+const FRECUENCY = 4                    // hz
+const INITIAL_ALIVE_PROBABILITY = 0.01 // 0 - 1
 
 // 3D automata rules:
 //                       0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
@@ -67,18 +67,10 @@ func printBoard(board *[SIZE][SIZE][SIZE]uint8) {
 	for i, c := range board {
 		for j, r := range c {
 			for k := range r {
-				switch board[i][j][k] { //TODO:does this work with less than 3 states?? (nope, commented out)
-				case 0:
+				if board[i][j][k] == 0 {
 					fmt.Print(" ")
-					// fmt.Print(board[i][j][k])
-				/*case 1:
-					fmt.Print("░")
-				case states - 2:
-					fmt.Print("▓")
-				case states - 1:
-					fmt.Print("█")*/
-				default:
-					fmt.Print("▒")
+				} else {
+					fmt.Print("█")
 				}
 			}
 			fmt.Print("|")
@@ -204,7 +196,7 @@ func update(board *[SIZE][SIZE][SIZE]uint8) {
 	var oldBoard [SIZE][SIZE][SIZE]uint8 // Is this memory safe???
 	for i, c := range board {
 		for j := range c {
-			oldBoard[i][j] = board[i][j] // TODO: does this do what i want it to do? (copy by value everithing)
+			oldBoard[i][j] = board[i][j]
 		}
 	}
 
@@ -231,26 +223,30 @@ func display_board(gBoard [SIZE][SIZE][SIZE]*graphic.Mesh, board [SIZE][SIZE][SI
 	for i, c := range board {
 		for j, r := range c {
 			for k := range r {
-				scale := float32(board[i][j][k]) / float32(states-1)
-				gBoard[i][j][k].SetScale(scale, scale, scale)
-
+				if board[i][j][k] == 0 {
+					gBoard[i][j][k].SetVisible(false)
+				} else {
+					scale := float32(board[i][j][k]) / float32(states-1)
+					gBoard[i][j][k].SetScale(scale, scale, scale)
+					gBoard[i][j][k].SetVisible(true)
+				}
 			}
 		}
 	}
 }
 
 func create_board(scene *core.Node) [SIZE][SIZE][SIZE]*graphic.Mesh {
-	//Creates graphical objestes and stores them on a 3D slice
+	// Creates graphical objestes and stores them on a 3D slice
 	var x [SIZE][SIZE][SIZE]*graphic.Mesh
 	for i := range x {
 		for j := range x[i] {
 			for k := 0; k < SIZE; k++ {
-				x[i][j][k] = create_box(float32(i), float32(j), float32(k))
-				c := math32.NewColor("white")
-				c.B = float32(i) / float32(SIZE) // Nice color gradient
-				c.G = float32(j) / float32(SIZE)
-				c.R = float32(k) / float32(SIZE)
-				x[i][j][k].SetMaterial(material.NewStandard(c)) //
+				color := math32.NewColor("white")
+				color.B = float32(i) / float32(SIZE) // Nice color gradient
+				color.G = float32(j) / float32(SIZE)
+				color.R = float32(k) / float32(SIZE)
+				x[i][j][k] = create_cell(float32(i), float32(j), float32(k), color)
+				x[i][j][k].SetVisible(false)
 				scene.Add(x[i][j][k])
 			}
 		}
@@ -258,9 +254,10 @@ func create_board(scene *core.Node) [SIZE][SIZE][SIZE]*graphic.Mesh {
 	return x
 }
 
-func create_box(x float32, y float32, z float32) *graphic.Mesh {
+func create_cell(x float32, y float32, z float32, color *math32.Color) *graphic.Mesh {
+	// Creates one box of desires color in position xyz
 	geom := geometry.NewBox(1.0/SIZE, 1.0/SIZE, 1.0/SIZE)
-	mat := material.NewStandard(math32.NewColor("Blue")) // Its probably a good idea to create the box with the final color
+	mat := material.NewStandard(color)
 	mesh := graphic.NewMesh(geom, mat)
 	mesh.SetPosition(x/SIZE-0.5, y/SIZE-0.5, z/SIZE-0.5)
 	return mesh
@@ -280,21 +277,6 @@ func main() {
 	// 	// printBoard(board)
 	// 	update(&board)
 	// }
-
-	ticker := time.NewTicker((1000 / FRECUENCY) * time.Millisecond)
-	done := make(chan bool) //TODO: delete this
-
-	go func() { //TODO: make this more compact
-		for {
-			select {
-			case <-done:
-				return
-			case t := <-ticker.C:
-				update(&board)
-				_ = t //TODO: delete t, we are probably never using done either
-			}
-		}
-	}()
 
 	// Create application and scene
 	a := app.App()
@@ -336,16 +318,24 @@ func main() {
 	scene.Add(btn)
 
 	// Create and add lights to the scene
-	scene.Add(light.NewAmbient(&math32.Color{1.0, 1.0, 1.0}, 0.8))
-	pointLight := light.NewPoint(&math32.Color{1, 1, 1}, 5.0)
+	scene.Add(light.NewAmbient(&math32.Color{R: 1, G: 1, B: 1}, 0.8))
+	pointLight := light.NewPoint(&math32.Color{R: 1, G: 1, B: 1}, 5.0)
 	pointLight.SetPosition(1, 0, 2)
 	scene.Add(pointLight)
 
 	// Create and add an axis helper to the scene
-	scene.Add(helper.NewAxes(0.5))
+	scene.Add(helper.NewAxes(0.2))
 
 	// Set background color to gray
 	a.Gls().ClearColor(0.4, 0.4, 0.4, 1.0)
+
+	// Asynchronous map updating
+	ticker := time.NewTicker((1000 / FRECUENCY) * time.Millisecond)
+	go func() {
+		for range ticker.C {
+			update(&board)
+		}
+	}()
 
 	// Run the application
 	a.Run(func(renderer *renderer.Renderer, deltaTime time.Duration) {
