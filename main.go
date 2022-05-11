@@ -201,17 +201,21 @@ func update(board *[SIZE][SIZE][SIZE]uint8) {
 	}
 
 	for i := 1; i < SIZE-1; i++ {
-		for j := 1; j < SIZE-1; j++ {
-			for k := 1; k < SIZE-1; k++ {
-				if board[i][j][k] == 1 { //cell is alive but on its last state
-					board[i][j][k] = survival[count_neigbours(&oldBoard, i, j, k)]
+		go update_rows(board, i, oldBoard) // is multithreading this simple? should wait for avery thread to finish? (this is probably not a problem)
+	}
+}
 
-				} else if board[i][j][k] > 1 { //cell is alive
-					board[i][j][k]--
+func update_rows(board *[40][40][40]uint8, i int, oldBoard [40][40][40]uint8) {
+	for j := 1; j < SIZE-1; j++ {
+		for k := 1; k < SIZE-1; k++ {
+			if board[i][j][k] == 1 { //cell is alive but on its last state
+				board[i][j][k] = survival[count_neigbours(&oldBoard, i, j, k)]
 
-				} else { //cell is dead
-					board[i][j][k] = (states - 1) * spawn[count_neigbours(&oldBoard, i, j, k)]
-				}
+			} else if board[i][j][k] > 1 { //cell is alive
+				board[i][j][k]--
+
+			} else { //cell is dead
+				board[i][j][k] = (states - 1) * spawn[count_neigbours(&oldBoard, i, j, k)]
 			}
 		}
 	}
