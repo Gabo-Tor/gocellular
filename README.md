@@ -10,6 +10,7 @@ Made using [G3N Game Engine](https://github.com/g3n/engine)
 ### Usage
 
 Change constants at the top of `main.go` then `go run main.go`
+
 *note: board of 45 by 45 by 45 uses aprox 1Gb of VRAM, do not run big scenes w/o a graphics card*
 
 ### GUI
