@@ -26,7 +26,8 @@ Change constants at the top of `main.go` then `go run main.go`
 ### Rules
 
 Automata rules are defined by: survival / spawn / states / neighbour
-some examples
+
+Some examples:
 
 #### 3D Brain (Jason Rampe)
 
