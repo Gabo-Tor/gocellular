@@ -11,6 +11,8 @@ Automata rules are defined by: survival / spawn / states / neighbour
 ### GUI
 
 ![GUI](automata.png)
+![gif](cristals9.gif)
+
 
 ### TODO
 
