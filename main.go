@@ -32,7 +32,7 @@ import (
 )
 
 const SIZE = 40                        // >50 is too much for the 3d engine
-const FRECUENCY = 4                    // hz
+const FRECUENCY = 8                    // hz
 const INITIAL_ALIVE_PROBABILITY = 0.01 // 0 - 1
 
 // 3D automata rules:
@@ -201,7 +201,7 @@ func update(board *[SIZE][SIZE][SIZE]uint8) {
 	}
 
 	for i := 1; i < SIZE-1; i++ {
-		go update_rows(board, i, oldBoard) // is multithreading this simple? should wait for avery thread to finish? (this is probably not a problem)
+		go update_rows(board, i, oldBoard) // is multithreading this simple in go? should we wait for every thread to finish? (this is probably not a problem in practice)
 	}
 }
 
@@ -269,6 +269,8 @@ func create_cell(x float32, y float32, z float32, color *math32.Color) *graphic.
 
 func main() {
 
+	rand.Seed(time.Now().UnixNano()) // seed
+
 	// //--For profiling code--
 	// file, _ := os.Create("./cpu.pprof")
 	// pprof.StartCPUProfile(file)
@@ -277,7 +279,7 @@ func main() {
 	var board [SIZE][SIZE][SIZE]uint8
 	populate(&board)
 
-	// for n := 0; n < 9; n++ { //magic number
+	// for n := 0; n < 9; n++ { // Simple game loop for debugging purpouses
 	// 	// printBoard(board)
 	// 	update(&board)
 	// }
@@ -328,7 +330,7 @@ func main() {
 	scene.Add(pointLight)
 
 	// Create and add an axis helper to the scene
-	scene.Add(helper.NewAxes(0.2))
+	scene.Add(helper.NewAxes(0.05))
 
 	// Set background color to gray
 	a.Gls().ClearColor(0.4, 0.4, 0.4, 1.0)
