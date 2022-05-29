@@ -31,9 +31,9 @@ import (
 	"github.com/g3n/engine/window"
 )
 
-const SIZE = 40                        // >50 is too much for the 3d engine
-const FRECUENCY = 8                    // hz
-const INITIAL_ALIVE_PROBABILITY = 0.01 // 0 - 1
+const SIZE = 20                       // >50 is too much for the 3d engine
+const FRECUENCY = 5                   // hz
+const INITIAL_ALIVE_PROBABILITY = 0.3 // 0 - 1
 
 // 3D automata rules:
 //                       0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
@@ -81,8 +81,8 @@ func printBoard(board *[SIZE][SIZE][SIZE]uint8) {
 
 }
 
-func one_if_positive(value uint8) int { // Does the compile make this inline? (yes) can I ask for this explicitly? (??)
-	if value > 0 {
+func one_if_alive(value uint8) int { // Does the compile make this inline? (yes) can I ask for this explicitly? (??)
+	if value == states-1 {
 		return 1
 	}
 	return 0
@@ -101,53 +101,53 @@ func count_neigbours(board *[SIZE][SIZE][SIZE]uint8, x int, y int, z int) int {
 }
 
 func countNeighborsMoore(count int, board *[SIZE][SIZE][SIZE]uint8, x int, y int, z int) int {
-	count += one_if_positive(board[x-1][y][z])
-	count += one_if_positive(board[x-1][y-1][z])
-	count += one_if_positive(board[x-1][y+1][z])
+	count += one_if_alive(board[x-1][y][z])
+	count += one_if_alive(board[x-1][y-1][z])
+	count += one_if_alive(board[x-1][y+1][z])
 
-	count += one_if_positive(board[x-1][y-1][z-1])
-	count += one_if_positive(board[x-1][y][z-1])
-	count += one_if_positive(board[x-1][y+1][z-1])
+	count += one_if_alive(board[x-1][y-1][z-1])
+	count += one_if_alive(board[x-1][y][z-1])
+	count += one_if_alive(board[x-1][y+1][z-1])
 
-	count += one_if_positive(board[x-1][y-1][z+1])
-	count += one_if_positive(board[x-1][y][z+1])
-	count += one_if_positive(board[x-1][y+1][z+1])
+	count += one_if_alive(board[x-1][y-1][z+1])
+	count += one_if_alive(board[x-1][y][z+1])
+	count += one_if_alive(board[x-1][y+1][z+1])
 
-	count += one_if_positive(board[x+1][y][z])
-	count += one_if_positive(board[x+1][y-1][z])
-	count += one_if_positive(board[x+1][y+1][z])
+	count += one_if_alive(board[x+1][y][z])
+	count += one_if_alive(board[x+1][y-1][z])
+	count += one_if_alive(board[x+1][y+1][z])
 
-	count += one_if_positive(board[x+1][y-1][z-1])
-	count += one_if_positive(board[x+1][y][z-1])
-	count += one_if_positive(board[x+1][y+1][z-1])
+	count += one_if_alive(board[x+1][y-1][z-1])
+	count += one_if_alive(board[x+1][y][z-1])
+	count += one_if_alive(board[x+1][y+1][z-1])
 
-	count += one_if_positive(board[x+1][y-1][z+1])
-	count += one_if_positive(board[x+1][y][z+1])
-	count += one_if_positive(board[x+1][y+1][z+1])
+	count += one_if_alive(board[x+1][y-1][z+1])
+	count += one_if_alive(board[x+1][y][z+1])
+	count += one_if_alive(board[x+1][y+1][z+1])
 
 	//  count += one_if_positive(board[x  ][y  ][z  ]) leaving this here for completeness
-	count += one_if_positive(board[x][y-1][z])
-	count += one_if_positive(board[x][y+1][z])
+	count += one_if_alive(board[x][y-1][z])
+	count += one_if_alive(board[x][y+1][z])
 
-	count += one_if_positive(board[x][y-1][z-1])
-	count += one_if_positive(board[x][y][z-1])
-	count += one_if_positive(board[x][y+1][z-1])
+	count += one_if_alive(board[x][y-1][z-1])
+	count += one_if_alive(board[x][y][z-1])
+	count += one_if_alive(board[x][y+1][z-1])
 
-	count += one_if_positive(board[x][y-1][z+1])
-	count += one_if_positive(board[x][y][z+1])
-	count += one_if_positive(board[x][y+1][z+1])
+	count += one_if_alive(board[x][y-1][z+1])
+	count += one_if_alive(board[x][y][z+1])
+	count += one_if_alive(board[x][y+1][z+1])
 	return count
 }
 
 func countNeighborsVonNeumann(count int, board *[SIZE][SIZE][SIZE]uint8, x int, y int, z int) int {
-	count += one_if_positive(board[x-1][y][z])
-	count += one_if_positive(board[x+1][y][z])
+	count += one_if_alive(board[x-1][y][z])
+	count += one_if_alive(board[x+1][y][z])
 
-	count += one_if_positive(board[x][y-1][z])
-	count += one_if_positive(board[x][y+1][z])
+	count += one_if_alive(board[x][y-1][z])
+	count += one_if_alive(board[x][y+1][z])
 
-	count += one_if_positive(board[x][y][z-1])
-	count += one_if_positive(board[x][y][z+1])
+	count += one_if_alive(board[x][y][z-1])
+	count += one_if_alive(board[x][y][z+1])
 
 	return count
 }
@@ -205,13 +205,13 @@ func update(board *[SIZE][SIZE][SIZE]uint8) {
 	}
 }
 
-func update_rows(board *[40][40][40]uint8, i int, oldBoard [40][40][40]uint8) {
+func update_rows(board *[SIZE][SIZE][SIZE]uint8, i int, oldBoard [SIZE][SIZE][SIZE]uint8) {
 	for j := 1; j < SIZE-1; j++ {
 		for k := 1; k < SIZE-1; k++ {
-			if board[i][j][k] == 1 { //cell is alive but on its last state
-				board[i][j][k] = survival[count_neigbours(&oldBoard, i, j, k)]
+			if board[i][j][k] == states-1 { //cell is alive but on its first state
+				board[i][j][k] -= (1 - survival[count_neigbours(&oldBoard, i, j, k)])
 
-			} else if board[i][j][k] > 1 { //cell is alive
+			} else if board[i][j][k] > 0 { //cell is alive
 				board[i][j][k]--
 
 			} else { //cell is dead
@@ -230,7 +230,7 @@ func display_board(gBoard [SIZE][SIZE][SIZE]*graphic.Mesh, board [SIZE][SIZE][SI
 				if board[i][j][k] == 0 {
 					gBoard[i][j][k].SetVisible(false)
 				} else {
-					scale := float32(board[i][j][k]) / float32(states-1)
+					scale := float32(board[i][j][k]+2) / float32(states)
 					gBoard[i][j][k].SetScale(scale, scale, scale)
 					gBoard[i][j][k].SetVisible(true)
 				}
