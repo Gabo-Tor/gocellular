@@ -1,6 +1,7 @@
 # gocellular
 
 3d cellular automata with a GUI in GO!
+
 ![gif](img/gliders.gif)
 
 ## Desciption
@@ -25,21 +26,25 @@ Change constants at the top of `main.go` then `go run main.go`
 ### Rules
 
 Automata rules are defined by: survival / spawn / states / neighbour
-some examples
+
+Some examples:
 
 #### 3D Brain (Jason Rampe)
 
 Rule: /4/2/M
+
 ![brain.gif](img/3dbrain.gif)
 
 #### 445 (Jason Rampe)
 
 Rule: 4/4/5/M
+
 ![445.gif](img/gliders2.gif)
 
 #### Clouds 1 (Jason Rampe)
 
 Rule: 13-26/13-14,17-19/2/M
+
 ![clouds.gif](img/clouds2.gif)
 
 ### TODO
